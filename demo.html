@@ -164,7 +164,7 @@
                 clearancePrice = clearancePrice ? parseFloat(clearancePrice) : 0
                 monitoringPrice = monitoringPrice ? parseFloat(monitoringPrice) : 0
                 console.log(buyPrice,carriagePrice,clearancePrice,monitoringPrice)
-                let mount = (buyPrice * this.arr[this.priceIndex].molecule + carriagePrice + clearancePrice - (((this.formData.isHaveTaxes?buyPrice:0) / 1.16 )* 0.1)) / 6.5
+                let mount = (buyPrice * this.arr[this.priceIndex].molecule + carriagePrice + clearancePrice + monitoringPrice - (((this.formData.isHaveTaxes?buyPrice:0) / 1.16 )* 0.1)) / 6.5
                 this.resultPrice = this.formatNum(mount, 10).toFixed(4)
 
             },
