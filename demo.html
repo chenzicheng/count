@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>价格计算</title>
+</head>
+
+<body>
+    <div id="app" style="margin: 0 auto;">
+        <div>
+            <h2>价格区间计算比例</h2>
+            <div id='priceCount'>
+
+            </div>
+
+        </div>
+        <!-- {{formData}} -->
+        <table style="width:600px">
+            <tr>
+                <td style="width: 50px;">
+                    <div>采购金额</div>
+                    <input type="number" oninput="if(value.length>9) value=value.slice(0,9)" v-model='formData.buyPrice' />
+                    <div v-if='!isBuyPrice'  style="color:red">请输入正数</div>
+                </td>
+                <td>
+                    <div>运费</div>
+                    <input id='carriagePrice'oninput="if(value.length>9) value=value.slice(0,9)" v-model='formData.carriagePrice' type="number">
+                    <div v-if='!isCarriagePrice' style="color:red">请输入正数</div>
+                </td>
+                <td>
+                    <div>鉴定报关</div>
+                    <input id='clearancePrice' oninput="if(value.length>9) value=value.slice(0,9)" v-model='formData.clearancePrice' type="number">
+                    <div v-if='!isClearancePrice' style="color:red">请输入正数</div>
+                </td>
+                <td>
+                    <div>检测费用</div>
+                    <input id='monitoringPrice' oninput="if(value.length>9) value=value.slice(0,9)" v-model='formData.monitoringPrice' type="number">
+                    <div v-if='!isMonitoringPrice' style="color:red">请输入正数</div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <input v-model='formData.isHaveTaxes' type="checkbox" id="female">
+                    <label for="female">退税</label>
+                    <!-- <input v-model='formData.taxes' type="text"> -->
+                    <!-- <div v-if='!isTaxes' style="color:red">请输入正数</div> -->
+                </td>
+                <td rowspan="3">
+                    <div>报价金额</div>
+                    <div style="color:red" v-if='priceNoticeShow'>
+                        请输入正确的价格
+                    </div>
+                    <div v-else style="font-size:18px">
+                        <template v-if='!formData.isHaveTaxes'>未退税价格</template>
+                        <template v-else>退税价格</template>
+                        ： {{resultPrice}}
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+<script src="./js/vue.js"></script>
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            priceIndex: null,
+            formData: {
+                isHaveTaxes: false,//是否退税
+                buyPrice: '',//采购金额
+                carriagePrice: "",//运费
+                clearancePrice: "",//鉴定报关
+                monitoringPrice: ""//检测费用
+            },
+            arr: [//价格区间
+                {
+                    start: 0,//开始
+                    end: 3000,//结束
+                    molecule: 1.4,//分子
+                },
+                {
+                    start: 3001,
+                    end: 6000,
+                    molecule: 1.3,//分子
+                },
+                {
+                    start: 6001,
+                    end: 15000,
+                    molecule: 1.28,//分子
+                },
+                {
+                    start: 15001,
+                    end: 30000,
+                    molecule: 1.25,//分子
+                },
+                {
+                    start: 30001,
+                    end: 50000,
+                    molecule: 1.2,//分子
+                },
+                {
+                    start: 50001,
+                    end: 60000,
+                    molecule: 1.18,//分子
+                },
+                {
+                    start: 60001,
+                    molecule: 1.15,//分子
+                }
+            ],
+            isBuyPrice: true,
+            isCarriagePrice: true,
+            isClearancePrice: true,
+            isMonitoringPrice: true,
+            // isTaxes: true,
+            priceNoticeShow: false,
+            resultPrice: 0.0000
+        },
+        watch: {
+            formData: {
+                handler: function (val, oldVal) {
+                    console.log(val)
+                    this.count()
+                },
+                deep: true
+            }
+        },
+        methods: {
+            formatNum(f, digit) {
+                var m = Math.pow(10, digit);
+                return parseInt(f * m, 10) / m;
+            },
+            count() {
+                //价格计算
+                let { buyPrice, carriagePrice, clearancePrice, monitoringPrice } = this.formData
+                //验证输入的是否正确
+                var reg = /^[+]{0,1}(\d+)$|^[+]{0,1}(\d+\.\d+)$/
+
+                this.isBuyPrice = buyPrice ? reg.test(buyPrice) : true
+                this.isCarriagePrice = carriagePrice ? reg.test(carriagePrice) : true
+                this.isClearancePrice = clearancePrice ? reg.test(clearancePrice) : true
+                this.isMonitoringPrice = monitoringPrice ? reg.test(monitoringPrice) : true
+                // this.isTaxes = isHaveTaxes ? (taxes ? reg.test(taxes) : true) : true
+                if (this.isBuyPrice && this.isCarriagePrice && this.isClearancePrice && this.isMonitoringPrice) {
+                    // 全部是正数
+                    this.priceNoticeShow = false
+                    //找到对应区间
+                    this.comppare()
+                    if (this.priceIndex > -1) {
+                        this.realCount()
+                    }
+                } else {
+                    this.priceNoticeShow = true
+                }
+
+            },
+            realCount() {
+                let { buyPrice, carriagePrice, clearancePrice, monitoringPrice } = this.formData
+                buyPrice = buyPrice ? parseFloat(buyPrice) : 0
+                carriagePrice = carriagePrice ? parseFloat(carriagePrice) : 0
+                clearancePrice = clearancePrice ? parseFloat(clearancePrice) : 0
+                monitoringPrice = monitoringPrice ? parseFloat(monitoringPrice) : 0
+                console.log(buyPrice,carriagePrice,clearancePrice,monitoringPrice)
+                let mount = (buyPrice * this.arr[this.priceIndex].molecule + carriagePrice + clearancePrice - (((this.formData.isHaveTaxes?buyPrice:0) / 1.16 )* 0.1)) / 6.5
+                this.resultPrice = this.formatNum(mount, 10).toFixed(4)
+
+            },
+            comppare() {
+                let { buyPrice } = this.formData
+                this.priceIndex = this.arr.findIndex((item) =>
+                    item.end ? (buyPrice <= item.end && buyPrice >= item.start) : (buyPrice >= item.start)
+                )
+                // var flag = false
+                // for (var i = 0; i < arr.length; i++) {
+                //     if (price >= arr[i].start && price <= arr[i].end) {
+                //         //满足区间条件
+                //         flag = true
+                //         var countPrice = price * (arr[i].molecule / arr[i].denominator)
+                //         countPrice = formatNum(countPrice, 10)
+                //         priceShow.innerHTML = countPrice.toFixed(4)
+                //         return false
+                //     }
+                // }
+                // if (!flag) {
+                //     //未找到区间
+                //     priceShow.innerHTML = '<span style="color:red">未找到对应价格区间</span>';
+                // }
+            }
+
+        }
+    })
+    console.log(Vue)
+
+
+    // //		正则
+    // var errorShow = document.getElementById('error'con)
+    // var reg = /^[+]{0,1}(\d+)$|^[+]{0,1}(\d+\.\d+)$/
+    // var priceShow = document.getElementById('priceShow');
+
+
+
+
+
+    // //需要配置的地方，例如需要配置一个1001到2000的区间
+    // //		之间添加{
+    // //			start:100,//开始
+    // //			end:500,//结束
+    // //			molecule:1.3,//分子
+    // //			denominator:6.5//分母`
+    // //		}
+
+    // var arr = [
+    //     {
+    //         start: 100,//开始
+    //         end: 500,//结束
+    //         molecule: 1.3,//分子
+    //         denominator: 6.5//分母`
+    //     },
+    //     {
+    //         start: 501,
+    //         end: 1000,
+    //         molecule: 1.25,//分子
+    //         denominator: 6.5//分母`
+    //     }
+    // ]
+
+
+
+
+
+
+
+    // var str = ''
+    // arr.forEach(function (item, index) {
+    //     str += '<div>' + item.start + '~' + item.end + '比例' + item.molecule + '/' + item.denominator + '</div>'
+    // })
+    // document.getElementById('priceCount').innerHTML = str
+    // //		console.log(str)
+    // //js计算精度处理
+    // function formatNum(f, digit) {
+    //     var m = Math.pow(10, digit);
+    //     return parseInt(f * m, 10) / m;
+    // }
+
+    // function count(price) {
+    //     var flag = false
+    //     for (var i = 0; i < arr.length; i++) {
+    //         if (price >= arr[i].start && price <= arr[i].end) {
+    //             //满足区间条件
+    //             flag = true
+    //             var countPrice = price * (arr[i].molecule / arr[i].denominator)
+    //             countPrice = formatNum(countPrice, 10)
+    //             priceShow.innerHTML = countPrice.toFixed(4)
+    //             return false
+    //         }
+    //     }
+    //     if (!flag) {
+    //         //未找到区间
+    //         priceShow.innerHTML = '<span style="color:red">未找到对应价格区间</span>';
+    //     }
+    // }
+
+    // //输入框监听
+    // buyPrice.oninput = function () {
+    //     var inputPrice = price.value
+    //     if (reg.test(inputPrice)) {
+    //         //					正数
+    //         errorShow.style.display = 'none'
+    //         count(parseFloat(inputPrice))
+    //     } else {
+    //         //					不是正数
+    //         errorShow.style.display = 'block'
+    //         priceShow.innerHTML = null;
+    //     }
+    // }
+</script>
+<style>
+    table {
+        width: 500px;
+    }
+</style>
+
+</html>
