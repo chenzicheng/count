@@ -43,6 +43,7 @@
                 <td>
                     <input v-model='formData.isHaveTaxes' type="checkbox" id="female">
                     <label for="female">退税</label>
+                    <div v-if='formData.isHaveTaxes'>退税金额:{{realTaxes}}</div>
                     <!-- <input v-model='formData.taxes' type="text"> -->
                     <!-- <div v-if='!isTaxes' style="color:red">请输入正数</div> -->
                 </td>
@@ -67,6 +68,7 @@
     var app = new Vue({
         el: '#app',
         data: {
+            realTaxes:0,
             priceIndex: null,
             formData: {
                 isHaveTaxes: false,//是否退税
@@ -164,9 +166,10 @@
                 clearancePrice = clearancePrice ? parseFloat(clearancePrice) : 0
                 monitoringPrice = monitoringPrice ? parseFloat(monitoringPrice) : 0
                 console.log(buyPrice,carriagePrice,clearancePrice,monitoringPrice)
-                let mount = (buyPrice * this.arr[this.priceIndex].molecule + carriagePrice + clearancePrice + monitoringPrice - (((this.formData.isHaveTaxes?buyPrice:0) / 1.16 )* 0.1)) / 6.5
+                this.taxes = ((this.formData.isHaveTaxes?buyPrice:0) / 1.16 )* 0.1
+                let mount = (buyPrice * this.arr[this.priceIndex].molecule + carriagePrice + clearancePrice + monitoringPrice - this.taxes) / 6.5
                 this.resultPrice = this.formatNum(mount, 10).toFixed(4)
-
+                this.realTaxes = this.taxes?this.formatNum(this.taxes, 10).toFixed(4):0
             },
             comppare() {
                 let { buyPrice } = this.formData
